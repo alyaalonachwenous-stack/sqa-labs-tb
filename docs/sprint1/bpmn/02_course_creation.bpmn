@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_EduPortal_CourseCreation"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <!-- Продукт: П6 ЕдуПортал | Спринт 1 | Дата: 26.09.2026 | Автор: Учасник В (ІТ) -->
+  <bpmn:collaboration id="Collaboration_CourseCreation">
+    <bpmn:participant id="Participant_EduPortal_Admin" name="ЕдуПортал" processRef="Process_EduPortal_Course" />
+    <bpmn:participant id="Participant_Teacher" name="Викладач" processRef="Process_Teacher_Course" />
+    <bpmn:messageFlow id="Flow_Msg_AssignTeacher" name="Повідомлення про призначення" sourceRef="Task_SendAssignmentMsg" targetRef="StartEvent_TeacherAssigned" />
+    <bpmn:messageFlow id="Flow_Msg_CourseForReview" name="Курс на перевірку" sourceRef="Task_SubmitForReview" targetRef="Event_CatchCourseReady" />
+    <bpmn:messageFlow id="Flow_Msg_RevisionNotes" name="Зауваження до курсу" sourceRef="Task_ReturnForRevision" targetRef="Event_CatchRevision" />
+    <bpmn:messageFlow id="Flow_Msg_PublishedConfirm" name="Підтвердження публікації" sourceRef="Task_PublishCourse" targetRef="Event_CatchPublished" />
+  </bpmn:collaboration>
+
+  <!-- ПУЛ 1: ЕДУПОРТАЛ (МЕНЕДЖЕР КУРСІВ, АДМІНІСТРАТОР, СИСТЕМА) -->
+  <bpmn:process id="Process_EduPortal_Course" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_EduPortal_Course">
+      <bpmn:lane id="Lane_CourseManager" name="Менеджер курсів">
+        <bpmn:flowNodeRef>StartEvent_DeptRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateCourse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AssignTeacher</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_CatchCourseReady</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewCourse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CourseApproved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReturnForRevision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Returned</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Administrator" name="Адміністратор">
+        <bpmn:flowNodeRef>Task_ConfigurePermissions</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_SystemCourse" name="Система">
+        <bpmn:flowNodeRef>Task_SendAssignmentMsg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PublishCourse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Published</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_DeptRequest" name="Надійшла заявка навчального відділу">
+      <bpmn:outgoing>Flow_C1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:task id="Task_CreateCourse" name="Створити курс у категорії з датами">
+      <bpmn:incoming>Flow_C1</bpmn:incoming>
+      <bpmn:outgoing>Flow_C2</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOut_CourseCard">
+        <bpmn:targetRef>DataObjectRef_CourseCard</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+
+    <bpmn:dataObjectReference id="DataObjectRef_CourseCard" name="Картка курсу" dataObjectRef="DataObject_CourseCard" />
+    <bpmn:dataObject id="DataObject_CourseCard" />
+
+    <bpmn:task id="Task_ConfigurePermissions" name="Налаштувати права доступу та резервне копіювання">
+      <bpmn:incoming>Flow_C2</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_AssignTeacher" name="Призначити викладача на курс">
+      <bpmn:incoming>Flow_C3</bpmn:incoming>
+      <bpmn:outgoing>Flow_C4</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_SendAssignmentMsg" name="Надіслати повідомлення про призначення">
+      <bpmn:incoming>Flow_C4</bpmn:incoming>
+      <bpmn:outgoing>Flow_C5</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:intermediateCatchEvent id="Event_CatchCourseReady" name="Отримано наповнений курс на перевірку">
+      <bpmn:incoming>Flow_C5</bpmn:incoming>
+      <bpmn:outgoing>Flow_C6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_CourseReady" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:task id="Task_ReviewCourse" name="Перевірити структуру та наповнення курсу">
+      <bpmn:incoming>Flow_C6</bpmn:incoming>
+      <bpmn:outgoing>Flow_C7</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gateway_CourseApproved" name="Перевірку курсу пройдено?" default="Flow_C8_Yes">
+      <bpmn:incoming>Flow_C7</bpmn:incoming>
+      <bpmn:outgoing>Flow_C8_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C8_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:task id="Task_ReturnForRevision" name="Повернути курс на доопрацювання із зауваженнями">
+      <bpmn:incoming>Flow_C8_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_C9_EndNo</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="EndEvent_Returned" name="Повернуто на доопрацювання">
+      <bpmn:incoming>Flow_C9_EndNo</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:task id="Task_PublishCourse" name="Опублікувати курс для студентів">
+      <bpmn:incoming>Flow_C8_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_EndYes</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOut_CourseCatalog">
+        <bpmn:targetRef>DataStoreRef_CourseCatalog</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+
+    <bpmn:dataStoreReference id="DataStoreRef_CourseCatalog" name="Каталог курсів" />
+
+    <bpmn:endEvent id="EndEvent_Published" name="Курс опубліковано">
+      <bpmn:incoming>Flow_C10_EndYes</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_C1" sourceRef="StartEvent_DeptRequest" targetRef="Task_CreateCourse" />
+    <bpmn:sequenceFlow id="Flow_C2" sourceRef="Task_CreateCourse" targetRef="Task_ConfigurePermissions" />
+    <bpmn:sequenceFlow id="Flow_C3" sourceRef="Task_ConfigurePermissions" targetRef="Task_AssignTeacher" />
+    <bpmn:sequenceFlow id="Flow_C4" sourceRef="Task_AssignTeacher" targetRef="Task_SendAssignmentMsg" />
+    <bpmn:sequenceFlow id="Flow_C5" sourceRef="Task_SendAssignmentMsg" targetRef="Event_CatchCourseReady" />
+    <bpmn:sequenceFlow id="Flow_C6" sourceRef="Event_CatchCourseReady" targetRef="Task_ReviewCourse" />
+    <bpmn:sequenceFlow id="Flow_C7" sourceRef="Task_ReviewCourse" targetRef="Gateway_CourseApproved" />
+    <bpmn:sequenceFlow id="Flow_C8_No" name="ні" sourceRef="Gateway_CourseApproved" targetRef="Task_ReturnForRevision" />
+    <bpmn:sequenceFlow id="Flow_C9_EndNo" sourceRef="Task_ReturnForRevision" targetRef="EndEvent_Returned" />
+    <bpmn:sequenceFlow id="Flow_C8_Yes" name="так" sourceRef="Gateway_CourseApproved" targetRef="Task_PublishCourse" />
+    <bpmn:sequenceFlow id="Flow_C10_EndYes" sourceRef="Task_PublishCourse" targetRef="EndEvent_Published" />
+  </bpmn:process>
+
+  <!-- ПУЛ 2: ВИКЛАДАЧ -->
+  <bpmn:process id="Process_Teacher_Course" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Teacher">
+      <bpmn:lane id="Lane_TeacherRole" name="Викладач">
+        <bpmn:flowNodeRef>StartEvent_TeacherAssigned</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ParallelSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AddResources</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AddAssignments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AddQuizzes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AddForum</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ParallelJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SetupEnrollment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SubmitForReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_TeacherWaitDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_CatchRevision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_TeacherRevision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_CatchPublished</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_TeacherPublished</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_TeacherAssigned" name="Отримано повідомлення про призначення">
+      <bpmn:outgoing>Flow_T1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Assigned" />
+    </bpmn:startEvent>
+
+    <bpmn:parallelGateway id="Gateway_ParallelSplit" name="Паралельне наповнення">
+      <bpmn:incoming>Flow_T1</bpmn:incoming>
+      <bpmn:outgoing>Flow_T2_1</bpmn:outgoing>
+      <bpmn:outgoing>Flow_T2_2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_T2_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_T2_4</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:task id="Task_AddResources" name="Додати навчальні ресурси у розділи">
+      <bpmn:incoming>Flow_T2_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_T3_1</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_AddAssignments" name="Створити практичні завдання">
+      <bpmn:incoming>Flow_T2_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_T3_2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_AddQuizzes" name="Створити тести курсу">
+      <bpmn:incoming>Flow_T2_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_T3_3</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_AddForum" name="Налаштувати форум курсу">
+      <bpmn:incoming>Flow_T2_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_T3_4</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:parallelGateway id="Gateway_ParallelJoin" name="Синхронізація наповнення">
+      <bpmn:incoming>Flow_T3_1</bpmn:incoming>
+      <bpmn:incoming>Flow_T3_2</bpmn:incoming>
+      <bpmn:incoming>Flow_T3_3</bpmn:incoming>
+      <bpmn:incoming>Flow_T3_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_T4</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:task id="Task_SetupEnrollment" name="Налаштувати самозарахування і кодове слово">
+      <bpmn:incoming>Flow_T4</bpmn:incoming>
+      <bpmn:outgoing>Flow_T5</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_SubmitForReview" name="Передати курс на перевірку менеджеру">
+      <bpmn:incoming>Flow_T5</bpmn:incoming>
+      <bpmn:outgoing>Flow_T6</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:eventBasedGateway id="Gateway_TeacherWaitDecision" name="Очікування результату перевірки">
+      <bpmn:incoming>Flow_T6</bpmn:incoming>
+      <bpmn:outgoing>Flow_T7_Rev</bpmn:outgoing>
+      <bpmn:outgoing>Flow_T7_Pub</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+
+    <bpmn:intermediateCatchEvent id="Event_CatchRevision" name="Отримано зауваження на доопрацювання">
+      <bpmn:incoming>Flow_T7_Rev</bpmn:incoming>
+      <bpmn:outgoing>Flow_T8_EndRev</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Rev" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:endEvent id="EndEvent_TeacherRevision" name="Повернуто на доопрацювання">
+      <bpmn:incoming>Flow_T8_EndRev</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:intermediateCatchEvent id="Event_CatchPublished" name="Отримано підтвердження публікації">
+      <bpmn:incoming>Flow_T7_Pub</bpmn:incoming>
+      <bpmn:outgoing>Flow_T8_EndPub</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Pub" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:endEvent id="EndEvent_TeacherPublished" name="Курс опубліковано">
+      <bpmn:incoming>Flow_T8_EndPub</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:textAnnotation id="TextAnnotation_EnrollmentKey">
+      <bpmn:text>Кодове слово передається студентам групи перед стартом семестру</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Assoc_EnrollmentKey" sourceRef="Task_SetupEnrollment" targetRef="TextAnnotation_EnrollmentKey" />
+
+    <bpmn:sequenceFlow id="Flow_T1" sourceRef="StartEvent_TeacherAssigned" targetRef="Gateway_ParallelSplit" />
+    <bpmn:sequenceFlow id="Flow_T2_1" sourceRef="Gateway_ParallelSplit" targetRef="Task_AddResources" />
+    <bpmn:sequenceFlow id="Flow_T2_2" sourceRef="Gateway_ParallelSplit" targetRef="Task_AddAssignments" />
+    <bpmn:sequenceFlow id="Flow_T2_3" sourceRef="Gateway_ParallelSplit" targetRef="Task_AddQuizzes" />
+    <bpmn:sequenceFlow id="Flow_T2_4" sourceRef="Gateway_ParallelSplit" targetRef="Task_AddForum" />
+    <bpmn:sequenceFlow id="Flow_T3_1" sourceRef="Task_AddResources" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_T3_2" sourceRef="Task_AddAssignments" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_T3_3" sourceRef="Task_AddQuizzes" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_T3_4" sourceRef="Task_AddForum" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_T4" sourceRef="Gateway_ParallelJoin" targetRef="Task_SetupEnrollment" />
+    <bpmn:sequenceFlow id="Flow_T5" sourceRef="Task_SetupEnrollment" targetRef="Task_SubmitForReview" />
+    <bpmn:sequenceFlow id="Flow_T6" sourceRef="Task_SubmitForReview" targetRef="Gateway_TeacherWaitDecision" />
+    <bpmn:sequenceFlow id="Flow_T7_Rev" sourceRef="Gateway_TeacherWaitDecision" targetRef="Event_CatchRevision" />
+    <bpmn:sequenceFlow id="Flow_T8_EndRev" sourceRef="Event_CatchRevision" targetRef="EndEvent_TeacherRevision" />
+    <bpmn:sequenceFlow id="Flow_T7_Pub" sourceRef="Gateway_TeacherWaitDecision" targetRef="Event_CatchPublished" />
+    <bpmn:sequenceFlow id="Flow_T8_EndPub" sourceRef="Event_CatchPublished" targetRef="EndEvent_TeacherPublished" />
+  </bpmn:process>
+
+  <!-- ГРАФІЧНА РОЗМІТКА ДІАГРАМИ -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_2">
+    <bpmndi:BPMNPlane id="BPMNPlane_2" bpmnElement="Collaboration_CourseCreation">
+      <bpmndi:BPMNShape id="Participant_EduPortal_Admin_di" bpmnElement="Participant_EduPortal_Admin" isHorizontal="true">
+        <dc:Bounds x="120" y="60" width="1580" height="420" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_CourseManager_di" bpmnElement="Lane_CourseManager" isHorizontal="true">
+        <dc:Bounds x="150" y="60" width="1550" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Administrator_di" bpmnElement="Lane_Administrator" isHorizontal="true">
+        <dc:Bounds x="150" y="220" width="1550" height="120" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_SystemCourse_di" bpmnElement="Lane_SystemCourse" isHorizontal="true">
+        <dc:Bounds x="150" y="340" width="1550" height="140" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_DeptRequest_di" bpmnElement="StartEvent_DeptRequest">
+        <dc:Bounds x="192" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateCourse_di" bpmnElement="Task_CreateCourse">
+        <dc:Bounds x="270" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectRef_CourseCard_di" bpmnElement="DataObjectRef_CourseCard">
+        <dc:Bounds x="422" y="85" width="36" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ConfigurePermissions_di" bpmnElement="Task_ConfigurePermissions">
+        <dc:Bounds x="380" y="240" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AssignTeacher_di" bpmnElement="Task_AssignTeacher">
+        <dc:Bounds x="540" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendAssignmentMsg_di" bpmnElement="Task_SendAssignmentMsg">
+        <dc:Bounds x="540" y="370" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchCourseReady_di" bpmnElement="Event_CatchCourseReady">
+        <dc:Bounds x="1122" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewCourse_di" bpmnElement="Task_ReviewCourse">
+        <dc:Bounds x="1190" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CourseApproved_di" bpmnElement="Gateway_CourseApproved" isMarkerVisible="true">
+        <dc:Bounds x="1345" y="115" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReturnForRevision_di" bpmnElement="Task_ReturnForRevision">
+        <dc:Bounds x="1430" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Returned_di" bpmnElement="EndEvent_Returned">
+        <dc:Bounds x="1602" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PublishCourse_di" bpmnElement="Task_PublishCourse">
+        <dc:Bounds x="1430" y="370" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStoreRef_CourseCatalog_di" bpmnElement="DataStoreRef_CourseCatalog">
+        <dc:Bounds x="1335" y="385" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Published_di" bpmnElement="EndEvent_Published">
+        <dc:Bounds x="1602" y="392" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_C1_di" bpmnElement="Flow_C1">
+        <di:waypoint x="228" y="140" />
+        <di:waypoint x="270" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C2_di" bpmnElement="Flow_C2">
+        <di:waypoint x="330" y="180" />
+        <di:waypoint x="330" y="280" />
+        <di:waypoint x="380" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_di" bpmnElement="Flow_C3">
+        <di:waypoint x="510" y="280" />
+        <di:waypoint x="525" y="280" />
+        <di:waypoint x="525" y="140" />
+        <di:waypoint x="540" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C4_di" bpmnElement="Flow_C4">
+        <di:waypoint x="600" y="180" />
+        <di:waypoint x="600" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C5_di" bpmnElement="Flow_C5">
+        <di:waypoint x="660" y="410" />
+        <di:waypoint x="1080" y="410" />
+        <di:waypoint x="1080" y="140" />
+        <di:waypoint x="1122" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C6_di" bpmnElement="Flow_C6">
+        <di:waypoint x="1158" y="140" />
+        <di:waypoint x="1190" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C7_di" bpmnElement="Flow_C7">
+        <di:waypoint x="1310" y="140" />
+        <di:waypoint x="1345" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C8_No_di" bpmnElement="Flow_C8_No">
+        <di:waypoint x="1395" y="140" />
+        <di:waypoint x="1430" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C9_EndNo_di" bpmnElement="Flow_C9_EndNo">
+        <di:waypoint x="1550" y="140" />
+        <di:waypoint x="1602" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C8_Yes_di" bpmnElement="Flow_C8_Yes">
+        <di:waypoint x="1370" y="165" />
+        <di:waypoint x="1370" y="360" />
+        <di:waypoint x="1490" y="360" />
+        <di:waypoint x="1490" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_EndYes_di" bpmnElement="Flow_C10_EndYes">
+        <di:waypoint x="1550" y="410" />
+        <di:waypoint x="1602" y="410" />
+      </bpmndi:BPMNEdge>
+
+      <!-- ПУЛ 2: ВИКЛАДАЧ -->
+      <bpmndi:BPMNShape id="Participant_Teacher_di" bpmnElement="Participant_Teacher" isHorizontal="true">
+        <dc:Bounds x="120" y="530" width="1580" height="410" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_TeacherRole_di" bpmnElement="Lane_TeacherRole" isHorizontal="true">
+        <dc:Bounds x="150" y="530" width="1550" height="410" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_TeacherAssigned_di" bpmnElement="StartEvent_TeacherAssigned">
+        <dc:Bounds x="582" y="712" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ParallelSplit_di" bpmnElement="Gateway_ParallelSplit">
+        <dc:Bounds x="655" y="705" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AddResources_di" bpmnElement="Task_AddResources">
+        <dc:Bounds x="740" y="550" width="120" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AddAssignments_di" bpmnElement="Task_AddAssignments">
+        <dc:Bounds x="740" y="640" width="120" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AddQuizzes_di" bpmnElement="Task_AddQuizzes">
+        <dc:Bounds x="740" y="730" width="120" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AddForum_di" bpmnElement="Task_AddForum">
+        <dc:Bounds x="740" y="820" width="120" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ParallelJoin_di" bpmnElement="Gateway_ParallelJoin">
+        <dc:Bounds x="895" y="705" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SetupEnrollment_di" bpmnElement="Task_SetupEnrollment">
+        <dc:Bounds x="970" y="690" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_EnrollmentKey_di" bpmnElement="TextAnnotation_EnrollmentKey">
+        <dc:Bounds x="950" y="825" width="210" height="55" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubmitForReview_di" bpmnElement="Task_SubmitForReview">
+        <dc:Bounds x="1120" y="690" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_TeacherWaitDecision_di" bpmnElement="Gateway_TeacherWaitDecision">
+        <dc:Bounds x="1285" y="705" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchRevision_di" bpmnElement="Event_CatchRevision">
+        <dc:Bounds x="1412" y="652" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_TeacherRevision_di" bpmnElement="EndEvent_TeacherRevision">
+        <dc:Bounds x="1502" y="652" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchPublished_di" bpmnElement="Event_CatchPublished">
+        <dc:Bounds x="1472" y="772" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_TeacherPublished_di" bpmnElement="EndEvent_TeacherPublished">
+        <dc:Bounds x="1602" y="772" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_T1_di" bpmnElement="Flow_T1">
+        <di:waypoint x="618" y="730" />
+        <di:waypoint x="655" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T2_1_di" bpmnElement="Flow_T2_1">
+        <di:waypoint x="680" y="705" />
+        <di:waypoint x="680" y="585" />
+        <di:waypoint x="740" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T2_2_di" bpmnElement="Flow_T2_2">
+        <di:waypoint x="680" y="705" />
+        <di:waypoint x="680" y="675" />
+        <di:waypoint x="740" y="675" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T2_3_di" bpmnElement="Flow_T2_3">
+        <di:waypoint x="680" y="755" />
+        <di:waypoint x="680" y="765" />
+        <di:waypoint x="740" y="765" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T2_4_di" bpmnElement="Flow_T2_4">
+        <di:waypoint x="680" y="755" />
+        <di:waypoint x="680" y="855" />
+        <di:waypoint x="740" y="855" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T3_1_di" bpmnElement="Flow_T3_1">
+        <di:waypoint x="860" y="585" />
+        <di:waypoint x="920" y="585" />
+        <di:waypoint x="920" y="705" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T3_2_di" bpmnElement="Flow_T3_2">
+        <di:waypoint x="860" y="675" />
+        <di:waypoint x="920" y="675" />
+        <di:waypoint x="920" y="705" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T3_3_di" bpmnElement="Flow_T3_3">
+        <di:waypoint x="860" y="765" />
+        <di:waypoint x="920" y="765" />
+        <di:waypoint x="920" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T3_4_di" bpmnElement="Flow_T3_4">
+        <di:waypoint x="860" y="855" />
+        <di:waypoint x="920" y="855" />
+        <di:waypoint x="920" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T4_di" bpmnElement="Flow_T4">
+        <di:waypoint x="945" y="730" />
+        <di:waypoint x="970" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T5_di" bpmnElement="Flow_T5">
+        <di:waypoint x="1090" y="730" />
+        <di:waypoint x="1120" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T6_di" bpmnElement="Flow_T6">
+        <di:waypoint x="1240" y="730" />
+        <di:waypoint x="1285" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T7_Rev_di" bpmnElement="Flow_T7_Rev">
+        <di:waypoint x="1310" y="705" />
+        <di:waypoint x="1310" y="670" />
+        <di:waypoint x="1412" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T8_EndRev_di" bpmnElement="Flow_T8_EndRev">
+        <di:waypoint x="1448" y="670" />
+        <di:waypoint x="1502" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T7_Pub_di" bpmnElement="Flow_T7_Pub">
+        <di:waypoint x="1310" y="755" />
+        <di:waypoint x="1310" y="790" />
+        <di:waypoint x="1472" y="790" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_T8_EndPub_di" bpmnElement="Flow_T8_EndPub">
+        <di:waypoint x="1508" y="790" />
+        <di:waypoint x="1602" y="790" />
+      </bpmndi:BPMNEdge>
+
+      <!-- АСОЦІАЦІЇ ТА ПОТОКИ ПОВІДОМЛЕНЬ -->
+      <bpmndi:BPMNEdge id="DataOut_CourseCard_di" bpmnElement="DataOut_CourseCard">
+        <di:waypoint x="390" y="115" />
+        <di:waypoint x="422" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOut_CourseCatalog_di" bpmnElement="DataOut_CourseCatalog">
+        <di:waypoint x="1430" y="410" />
+        <di:waypoint x="1385" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_EnrollmentKey_di" bpmnElement="Assoc_EnrollmentKey">
+        <di:waypoint x="1030" y="770" />
+        <di:waypoint x="1030" y="825" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_Msg_AssignTeacher_di" bpmnElement="Flow_Msg_AssignTeacher">
+        <di:waypoint x="600" y="450" />
+        <di:waypoint x="600" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Msg_CourseForReview_di" bpmnElement="Flow_Msg_CourseForReview">
+        <di:waypoint x="1140" y="690" />
+        <di:waypoint x="1140" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Msg_RevisionNotes_di" bpmnElement="Flow_Msg_RevisionNotes">
+        <di:waypoint x="1430" y="180" />
+        <di:waypoint x="1430" y="652" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Msg_PublishedConfirm_di" bpmnElement="Flow_Msg_PublishedConfirm">
+        <di:waypoint x="1490" y="450" />
+        <di:waypoint x="1490" y="772" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
