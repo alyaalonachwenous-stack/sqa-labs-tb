@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_EduPortal_QuizAttempt"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <!-- Продукт: П6 ЕдуПортал | Спринт 1 | Дата: 26.09.2026 | Автор: Учасник В (ІТ) -->
+  <bpmn:collaboration id="Collaboration_QuizAttempt">
+    <bpmn:participant id="Participant_Student" name="Студент" processRef="Process_Student" />
+    <bpmn:participant id="Participant_EduPortal" name="ЕдуПортал" processRef="Process_EduPortal" />
+    <bpmn:messageFlow id="Flow_Msg_StartRequest" name="Запит на початок спроби" sourceRef="Task_StartAttempt" targetRef="StartEvent_SysMsg" />
+    <bpmn:messageFlow id="Flow_Msg_Denial" name="Відмова в доступі" sourceRef="Task_SendDenial" targetRef="Event_CatchDenied" />
+    <bpmn:messageFlow id="Flow_Msg_Questions" name="Сторінки з питаннями" sourceRef="Task_GeneratePages" targetRef="Event_CatchQuestions" />
+    <bpmn:messageFlow id="Flow_Msg_SubmitQuiz" name="Здана спроба тесту" sourceRef="Task_SubmitQuiz" targetRef="Event_CatchSubmitted" />
+    <bpmn:messageFlow id="Flow_Msg_Result" name="Результат і оцінка" sourceRef="Task_SaveAndNotify" targetRef="Event_CatchResult" />
+  </bpmn:collaboration>
+
+  <!-- ПУЛ 1: СТУДЕНТ -->
+  <bpmn:process id="Process_Student" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Student">
+      <bpmn:lane id="Lane_StudentRole" name="Студент">
+        <bpmn:flowNodeRef>StartEvent_Student</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_StartAttempt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_EventAccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_CatchDenied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_StudentDenied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_CatchQuestions</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_Answering</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SubmitQuiz</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_CatchResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_StudentDone</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_Student" name="Виникла потреба скласти тест">
+      <bpmn:outgoing>Flow_S1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:task id="Task_StartAttempt" name="Розпочати спробу тесту">
+      <bpmn:incoming>Flow_S1</bpmn:incoming>
+      <bpmn:outgoing>Flow_S2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:eventBasedGateway id="Gateway_EventAccess" name="Очікування відповіді системи">
+      <bpmn:incoming>Flow_S2</bpmn:incoming>
+      <bpmn:outgoing>Flow_S3_Deny</bpmn:outgoing>
+      <bpmn:outgoing>Flow_S3_Allow</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+
+    <bpmn:intermediateCatchEvent id="Event_CatchDenied" name="Отримано відмову в доступі">
+      <bpmn:incoming>Flow_S3_Deny</bpmn:incoming>
+      <bpmn:outgoing>Flow_S4_EndDeny</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Deny" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:endEvent id="EndEvent_StudentDenied" name="Спроби вичерпано">
+      <bpmn:incoming>Flow_S4_EndDeny</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:intermediateCatchEvent id="Event_CatchQuestions" name="Отримано сторінки з питаннями">
+      <bpmn:incoming>Flow_S3_Allow</bpmn:incoming>
+      <bpmn:outgoing>Flow_S5_ToSub</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Questions" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:subProcess id="SubProcess_Answering" name="Відповідати на питання тесту">
+      <bpmn:incoming>Flow_S5_ToSub</bpmn:incoming>
+      <bpmn:outgoing>Flow_S6_ToSubmit</bpmn:outgoing>
+      <bpmn:standardLoopCharacteristics />
+      <bpmn:startEvent id="SubStart_Q" name="Питання відкрито">
+        <bpmn:outgoing>Flow_Sub1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="Task_SelectAnswer" name="Обрати та зберегти відповідь">
+        <bpmn:incoming>Flow_Sub1</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub2</bpmn:outgoing>
+        <bpmn:dataOutputAssociation id="DataOut_StudentAnswers">
+          <bpmn:targetRef>DataObjectRef_Answers</bpmn:targetRef>
+        </bpmn:dataOutputAssociation>
+      </bpmn:task>
+      <bpmn:endEvent id="SubEnd_Q" name="Відповідь збережено">
+        <bpmn:incoming>Flow_Sub2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Sub1" sourceRef="SubStart_Q" targetRef="Task_SelectAnswer" />
+      <bpmn:sequenceFlow id="Flow_Sub2" sourceRef="Task_SelectAnswer" targetRef="SubEnd_Q" />
+    </bpmn:subProcess>
+
+    <bpmn:dataObjectReference id="DataObjectRef_Answers" name="Відповіді студента" dataObjectRef="DataObject_Answers" />
+    <bpmn:dataObject id="DataObject_Answers" />
+
+    <bpmn:task id="Task_SubmitQuiz" name="Завершити спробу та надіслати тест">
+      <bpmn:incoming>Flow_S6_ToSubmit</bpmn:incoming>
+      <bpmn:outgoing>Flow_S7_ToWaitGrade</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:intermediateCatchEvent id="Event_CatchResult" name="Отримано оцінку за тест">
+      <bpmn:incoming>Flow_S7_ToWaitGrade</bpmn:incoming>
+      <bpmn:outgoing>Flow_S8_ToEnd</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Result" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:endEvent id="EndEvent_StudentDone" name="Спробу завершено">
+      <bpmn:incoming>Flow_S8_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_S1" sourceRef="StartEvent_Student" targetRef="Task_StartAttempt" />
+    <bpmn:sequenceFlow id="Flow_S2" sourceRef="Task_StartAttempt" targetRef="Gateway_EventAccess" />
+    <bpmn:sequenceFlow id="Flow_S3_Deny" sourceRef="Gateway_EventAccess" targetRef="Event_CatchDenied" />
+    <bpmn:sequenceFlow id="Flow_S4_EndDeny" sourceRef="Event_CatchDenied" targetRef="EndEvent_StudentDenied" />
+    <bpmn:sequenceFlow id="Flow_S3_Allow" sourceRef="Gateway_EventAccess" targetRef="Event_CatchQuestions" />
+    <bpmn:sequenceFlow id="Flow_S5_ToSub" sourceRef="Event_CatchQuestions" targetRef="SubProcess_Answering" />
+    <bpmn:sequenceFlow id="Flow_S6_ToSubmit" sourceRef="SubProcess_Answering" targetRef="Task_SubmitQuiz" />
+    <bpmn:sequenceFlow id="Flow_S7_ToWaitGrade" sourceRef="Task_SubmitQuiz" targetRef="Event_CatchResult" />
+    <bpmn:sequenceFlow id="Flow_S8_ToEnd" sourceRef="Event_CatchResult" targetRef="EndEvent_StudentDone" />
+  </bpmn:process>
+
+  <!-- ПУЛ 2: ЕДУПОРТАЛ (СИСТЕМА) -->
+  <bpmn:process id="Process_EduPortal" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_EduPortal">
+      <bpmn:lane id="Lane_System" name="Система">
+        <bpmn:flowNodeRef>StartEvent_SysMsg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckAccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_AccessValid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendDenial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_SysDenied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GeneratePages</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_SysEventWait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_CatchSubmitted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_TimerExpired</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ForceClose</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_SysSyncFinish</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AutoScore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SaveAndNotify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_SysCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_SysMsg" name="Отримано запит на початок спроби">
+      <bpmn:outgoing>Flow_E1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_StartReq" />
+    </bpmn:startEvent>
+
+    <bpmn:task id="Task_CheckAccess" name="Перевірити вікно доступності і кількість спроб">
+      <bpmn:incoming>Flow_E1</bpmn:incoming>
+      <bpmn:outgoing>Flow_E2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gateway_AccessValid" name="Тест доступний і спроби залишились?" default="Flow_E3_Yes">
+      <bpmn:incoming>Flow_E2</bpmn:incoming>
+      <bpmn:outgoing>Flow_E3_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_E3_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:task id="Task_SendDenial" name="Надіслати відмову в доступі">
+      <bpmn:incoming>Flow_E3_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_E4_ToDeniedEnd</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="EndEvent_SysDenied" name="Спроби вичерпано">
+      <bpmn:incoming>Flow_E4_ToDeniedEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:task id="Task_GeneratePages" name="Сформувати сторінки з питаннями">
+      <bpmn:incoming>Flow_E3_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_E5_ToEventWait</bpmn:outgoing>
+      <bpmn:property id="Property_QuestionBank" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataIn_QuestionBank">
+        <bpmn:sourceRef>DataStoreRef_QuestionBank</bpmn:sourceRef>
+        <bpmn:targetRef>Property_QuestionBank</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:task>
+
+    <bpmn:dataStoreReference id="DataStoreRef_QuestionBank" name="Банк питань" />
+
+    <bpmn:eventBasedGateway id="Gateway_SysEventWait" name="Очікування завершення спроби">
+      <bpmn:incoming>Flow_E5_ToEventWait</bpmn:incoming>
+      <bpmn:outgoing>Flow_E6_Submitted</bpmn:outgoing>
+      <bpmn:outgoing>Flow_E6_Timeout</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+
+    <bpmn:intermediateCatchEvent id="Event_CatchSubmitted" name="Отримано завершену спробу">
+      <bpmn:incoming>Flow_E6_Submitted</bpmn:incoming>
+      <bpmn:outgoing>Flow_E7_Merge1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Submitted" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:intermediateCatchEvent id="Event_TimerExpired" name="Час тестування вичерпано">
+      <bpmn:incoming>Flow_E6_Timeout</bpmn:incoming>
+      <bpmn:outgoing>Flow_E7_ToForceClose</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_Timeout" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:task id="Task_ForceClose" name="Автоматично зафіксувати поточні відповіді">
+      <bpmn:incoming>Flow_E7_ToForceClose</bpmn:incoming>
+      <bpmn:outgoing>Flow_E7_Merge2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gateway_SysSyncFinish" name="Синхронізація завершення">
+      <bpmn:incoming>Flow_E7_Merge1</bpmn:incoming>
+      <bpmn:incoming>Flow_E7_Merge2</bpmn:incoming>
+      <bpmn:outgoing>Flow_E8_ToScore</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:task id="Task_AutoScore" name="Оцінити відповіді автоматично за ключем">
+      <bpmn:incoming>Flow_E8_ToScore</bpmn:incoming>
+      <bpmn:outgoing>Flow_E9_ToSave</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOut_QuizScore">
+        <bpmn:targetRef>DataObjectRef_QuizScore</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+
+    <bpmn:dataObjectReference id="DataObjectRef_QuizScore" name="Оцінка за тест" dataObjectRef="DataObject_QuizScore" />
+    <bpmn:dataObject id="DataObject_QuizScore" />
+
+    <bpmn:task id="Task_SaveAndNotify" name="Записати результат у журнал і показати студенту">
+      <bpmn:incoming>Flow_E9_ToSave</bpmn:incoming>
+      <bpmn:outgoing>Flow_E10_ToEnd</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOut_Gradebook">
+        <bpmn:targetRef>DataStoreRef_Gradebook</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+
+    <bpmn:dataStoreReference id="DataStoreRef_Gradebook" name="Журнал оцінок" />
+
+    <bpmn:endEvent id="EndEvent_SysCompleted" name="Спробу оцінено (в т.ч. автозавершення)">
+      <bpmn:incoming>Flow_E10_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:textAnnotation id="TextAnnotation_TimerNote">
+      <bpmn:text>Час спроби суворо обмежений налаштуваннями курсу; при вичерпанні часу спроба закривається автоматично</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Assoc_TimerNote" sourceRef="Event_TimerExpired" targetRef="TextAnnotation_TimerNote" />
+
+    <bpmn:sequenceFlow id="Flow_E1" sourceRef="StartEvent_SysMsg" targetRef="Task_CheckAccess" />
+    <bpmn:sequenceFlow id="Flow_E2" sourceRef="Task_CheckAccess" targetRef="Gateway_AccessValid" />
+    <bpmn:sequenceFlow id="Flow_E3_No" name="ні" sourceRef="Gateway_AccessValid" targetRef="Task_SendDenial" />
+    <bpmn:sequenceFlow id="Flow_E4_ToDeniedEnd" sourceRef="Task_SendDenial" targetRef="EndEvent_SysDenied" />
+    <bpmn:sequenceFlow id="Flow_E3_Yes" name="так" sourceRef="Gateway_AccessValid" targetRef="Task_GeneratePages" />
+    <bpmn:sequenceFlow id="Flow_E5_ToEventWait" sourceRef="Task_GeneratePages" targetRef="Gateway_SysEventWait" />
+    <bpmn:sequenceFlow id="Flow_E6_Submitted" sourceRef="Gateway_SysEventWait" targetRef="Event_CatchSubmitted" />
+    <bpmn:sequenceFlow id="Flow_E6_Timeout" sourceRef="Gateway_SysEventWait" targetRef="Event_TimerExpired" />
+    <bpmn:sequenceFlow id="Flow_E7_Merge1" sourceRef="Event_CatchSubmitted" targetRef="Gateway_SysSyncFinish" />
+    <bpmn:sequenceFlow id="Flow_E7_ToForceClose" sourceRef="Event_TimerExpired" targetRef="Task_ForceClose" />
+    <bpmn:sequenceFlow id="Flow_E7_Merge2" sourceRef="Task_ForceClose" targetRef="Gateway_SysSyncFinish" />
+    <bpmn:sequenceFlow id="Flow_E8_ToScore" sourceRef="Gateway_SysSyncFinish" targetRef="Task_AutoScore" />
+    <bpmn:sequenceFlow id="Flow_E9_ToSave" sourceRef="Task_AutoScore" targetRef="Task_SaveAndNotify" />
+    <bpmn:sequenceFlow id="Flow_E10_ToEnd" sourceRef="Task_SaveAndNotify" targetRef="EndEvent_SysCompleted" />
+  </bpmn:process>
+
+  <!-- ГРАФІЧНА РОЗМІТКА ДІАГРАМИ -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_QuizAttempt">
+      <bpmndi:BPMNShape id="Participant_Student_di" bpmnElement="Participant_Student" isHorizontal="true">
+        <dc:Bounds x="120" y="60" width="1560" height="310" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_StudentRole_di" bpmnElement="Lane_StudentRole" isHorizontal="true">
+        <dc:Bounds x="150" y="60" width="1530" height="310" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_Student_di" bpmnElement="StartEvent_Student">
+        <dc:Bounds x="192" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_StartAttempt_di" bpmnElement="Task_StartAttempt">
+        <dc:Bounds x="270" y="160" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_EventAccess_di" bpmnElement="Gateway_EventAccess">
+        <dc:Bounds x="425" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchDenied_di" bpmnElement="Event_CatchDenied">
+        <dc:Bounds x="522" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_StudentDenied_di" bpmnElement="EndEvent_StudentDenied">
+        <dc:Bounds x="612" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchQuestions_di" bpmnElement="Event_CatchQuestions">
+        <dc:Bounds x="672" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="SubProcess_Answering_di" bpmnElement="SubProcess_Answering" isExpanded="true">
+        <dc:Bounds x="760" y="145" width="340" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_Q_di" bpmnElement="SubStart_Q">
+        <dc:Bounds x="785" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SelectAnswer_di" bpmnElement="Task_SelectAnswer">
+        <dc:Bounds x="860" y="185" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_Q_di" bpmnElement="SubEnd_Q">
+        <dc:Bounds x="1022" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Sub1_di" bpmnElement="Flow_Sub1">
+        <di:waypoint x="821" y="225" />
+        <di:waypoint x="860" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Sub2_di" bpmnElement="Flow_Sub2">
+        <di:waypoint x="980" y="225" />
+        <di:waypoint x="1022" y="225" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNShape id="DataObjectRef_Answers_di" bpmnElement="DataObjectRef_Answers">
+        <dc:Bounds x="902" y="75" width="36" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_SubmitQuiz_di" bpmnElement="Task_SubmitQuiz">
+        <dc:Bounds x="1150" y="185" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchResult_di" bpmnElement="Event_CatchResult">
+        <dc:Bounds x="1482" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_StudentDone_di" bpmnElement="EndEvent_StudentDone">
+        <dc:Bounds x="1592" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_S1_di" bpmnElement="Flow_S1">
+        <di:waypoint x="228" y="200" />
+        <di:waypoint x="270" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_di" bpmnElement="Flow_S2">
+        <di:waypoint x="380" y="200" />
+        <di:waypoint x="425" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S3_Deny_di" bpmnElement="Flow_S3_Deny">
+        <di:waypoint x="450" y="175" />
+        <di:waypoint x="450" y="120" />
+        <di:waypoint x="522" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S4_EndDeny_di" bpmnElement="Flow_S4_EndDeny">
+        <di:waypoint x="558" y="120" />
+        <di:waypoint x="612" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S3_Allow_di" bpmnElement="Flow_S3_Allow">
+        <di:waypoint x="450" y="225" />
+        <di:waypoint x="450" y="230" />
+        <di:waypoint x="672" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S5_ToSub_di" bpmnElement="Flow_S5_ToSub">
+        <di:waypoint x="708" y="230" />
+        <di:waypoint x="760" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S6_ToSubmit_di" bpmnElement="Flow_S6_ToSubmit">
+        <di:waypoint x="1100" y="225" />
+        <di:waypoint x="1150" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S7_ToWaitGrade_di" bpmnElement="Flow_S7_ToWaitGrade">
+        <di:waypoint x="1270" y="225" />
+        <di:waypoint x="1482" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S8_ToEnd_di" bpmnElement="Flow_S8_ToEnd">
+        <di:waypoint x="1518" y="225" />
+        <di:waypoint x="1592" y="225" />
+      </bpmndi:BPMNEdge>
+
+      <!-- ПУЛ 2: ЕДУПОРТАЛ -->
+      <bpmndi:BPMNShape id="Participant_EduPortal_di" bpmnElement="Participant_EduPortal" isHorizontal="true">
+        <dc:Bounds x="120" y="420" width="1560" height="360" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_System_di" bpmnElement="Lane_System" isHorizontal="true">
+        <dc:Bounds x="150" y="420" width="1530" height="360" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_SysMsg_di" bpmnElement="StartEvent_SysMsg">
+        <dc:Bounds x="272" y="552" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckAccess_di" bpmnElement="Task_CheckAccess">
+        <dc:Bounds x="350" y="530" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_AccessValid_di" bpmnElement="Gateway_AccessValid" isMarkerVisible="true">
+        <dc:Bounds x="505" y="545" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendDenial_di" bpmnElement="Task_SendDenial">
+        <dc:Bounds x="580" y="450" width="110" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_SysDenied_di" bpmnElement="EndEvent_SysDenied">
+        <dc:Bounds x="722" y="467" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GeneratePages_di" bpmnElement="Task_GeneratePages">
+        <dc:Bounds x="630" y="560" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStoreRef_QuestionBank_di" bpmnElement="DataStoreRef_QuestionBank">
+        <dc:Bounds x="665" y="685" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Gateway_SysEventWait_di" bpmnElement="Gateway_SysEventWait">
+        <dc:Bounds x="815" y="575" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchSubmitted_di" bpmnElement="Event_CatchSubmitted">
+        <dc:Bounds x="1032" y="512" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_TimerExpired_di" bpmnElement="Event_TimerExpired">
+        <dc:Bounds x="912" y="632" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ForceClose_di" bpmnElement="Task_ForceClose">
+        <dc:Bounds x="990" y="610" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SysSyncFinish_di" bpmnElement="Gateway_SysSyncFinish" isMarkerVisible="true">
+        <dc:Bounds x="1155" y="565" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AutoScore_di" bpmnElement="Task_AutoScore">
+        <dc:Bounds x="1250" y="550" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectRef_QuizScore_di" bpmnElement="DataObjectRef_QuizScore">
+        <dc:Bounds x="1292" y="455" width="36" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SaveAndNotify_di" bpmnElement="Task_SaveAndNotify">
+        <dc:Bounds x="1420" y="550" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStoreRef_Gradebook_di" bpmnElement="DataStoreRef_Gradebook">
+        <dc:Bounds x="1455" y="685" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_SysCompleted_di" bpmnElement="EndEvent_SysCompleted">
+        <dc:Bounds x="1592" y="572" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_TimerNote_di" bpmnElement="TextAnnotation_TimerNote">
+        <dc:Bounds x="830" y="710" width="240" height="55" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_E1_di" bpmnElement="Flow_E1">
+        <di:waypoint x="308" y="570" />
+        <di:waypoint x="350" y="570" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E2_di" bpmnElement="Flow_E2">
+        <di:waypoint x="470" y="570" />
+        <di:waypoint x="505" y="570" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E3_No_di" bpmnElement="Flow_E3_No">
+        <di:waypoint x="530" y="545" />
+        <di:waypoint x="530" y="485" />
+        <di:waypoint x="580" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E4_ToDeniedEnd_di" bpmnElement="Flow_E4_ToDeniedEnd">
+        <di:waypoint x="690" y="485" />
+        <di:waypoint x="722" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E3_Yes_di" bpmnElement="Flow_E3_Yes">
+        <di:waypoint x="555" y="570" />
+        <di:waypoint x="590" y="570" />
+        <di:waypoint x="590" y="600" />
+        <di:waypoint x="630" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E5_ToEventWait_di" bpmnElement="Flow_E5_ToEventWait">
+        <di:waypoint x="750" y="600" />
+        <di:waypoint x="815" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E6_Submitted_di" bpmnElement="Flow_E6_Submitted">
+        <di:waypoint x="840" y="575" />
+        <di:waypoint x="840" y="530" />
+        <di:waypoint x="1032" y="530" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E6_Timeout_di" bpmnElement="Flow_E6_Timeout">
+        <di:waypoint x="840" y="625" />
+        <di:waypoint x="840" y="650" />
+        <di:waypoint x="912" y="650" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E7_ToForceClose_di" bpmnElement="Flow_E7_ToForceClose">
+        <di:waypoint x="948" y="650" />
+        <di:waypoint x="990" y="650" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E7_Merge1_di" bpmnElement="Flow_E7_Merge1">
+        <di:waypoint x="1068" y="530" />
+        <di:waypoint x="1180" y="530" />
+        <di:waypoint x="1180" y="565" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E7_Merge2_di" bpmnElement="Flow_E7_Merge2">
+        <di:waypoint x="1110" y="650" />
+        <di:waypoint x="1180" y="650" />
+        <di:waypoint x="1180" y="615" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E8_ToScore_di" bpmnElement="Flow_E8_ToScore">
+        <di:waypoint x="1205" y="590" />
+        <di:waypoint x="1250" y="590" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E9_ToSave_di" bpmnElement="Flow_E9_ToSave">
+        <di:waypoint x="1370" y="590" />
+        <di:waypoint x="1420" y="590" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E10_ToEnd_di" bpmnElement="Flow_E10_ToEnd">
+        <di:waypoint x="1540" y="590" />
+        <di:waypoint x="1592" y="590" />
+      </bpmndi:BPMNEdge>
+
+      <!-- АСОЦІАЦІЇ ТА ПОТОКИ ПОВІДОМЛЕНЬ -->
+      <bpmndi:BPMNEdge id="DataOut_StudentAnswers_di" bpmnElement="DataOut_StudentAnswers">
+        <di:waypoint x="920" y="185" />
+        <di:waypoint x="920" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataIn_QuestionBank_di" bpmnElement="DataIn_QuestionBank">
+        <di:waypoint x="690" y="685" />
+        <di:waypoint x="690" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOut_QuizScore_di" bpmnElement="DataOut_QuizScore">
+        <di:waypoint x="1310" y="550" />
+        <di:waypoint x="1310" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOut_Gradebook_di" bpmnElement="DataOut_Gradebook">
+        <di:waypoint x="1480" y="630" />
+        <di:waypoint x="1480" y="685" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_TimerNote_di" bpmnElement="Assoc_TimerNote">
+        <di:waypoint x="930" y="668" />
+        <di:waypoint x="930" y="710" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_Msg_StartRequest_di" bpmnElement="Flow_Msg_StartRequest">
+        <di:waypoint x="290" y="240" />
+        <di:waypoint x="290" y="552" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Msg_Denial_di" bpmnElement="Flow_Msg_Denial">
+        <di:waypoint x="635" y="450" />
+        <di:waypoint x="635" y="390" />
+        <di:waypoint x="540" y="390" />
+        <di:waypoint x="540" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Msg_Questions_di" bpmnElement="Flow_Msg_Questions">
+        <di:waypoint x="690" y="560" />
+        <di:waypoint x="690" y="248" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Msg_SubmitQuiz_di" bpmnElement="Flow_Msg_SubmitQuiz">
+        <di:waypoint x="1210" y="265" />
+        <di:waypoint x="1210" y="400" />
+        <di:waypoint x="1050" y="400" />
+        <di:waypoint x="1050" y="512" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Msg_Result_di" bpmnElement="Flow_Msg_Result">
+        <di:waypoint x="1500" y="550" />
+        <di:waypoint x="1500" y="243" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
