@@ -6,7 +6,7 @@
 
 ## Вибір сценаріїв (обґрунтування)
 
-Автоматизуємо те, що **справді проходить через інтерфейс** і повторюється при кожному випуску: вхід (High, F-10, GUI-10, GUI-20) та каталог/пошук курсів (High, F-30). Правила бізнес-логіки (підсумки, шкала ECTS, штрафи, умови зарахування) через браузер не перевіряються — для них є юніт-тести JUnit 5. Сценарії зарахування з кодовим словом (F-40) і здачі завдань (F-60) потребують попереднього налаштування курсу викладачем після кожного щогодинного скидання стенда, тому до поточного спринта не включені (кандидати для спринта 5).
+Автоматизуємо те, що **справді проходить через інтерфейс** і повторюється при кожному випуску: вхід (High, F-10, GUI-10, GUI-20) та каталог/пошук курсів (High, F-30, F-140). Правила бізнес-логіки (підсумки, шкала ECTS, штрафи, умови зарахування) через браузер не перевіряються — для них є юніт-тести JUnit 5. Сценарії зарахування з кодовим словом (F-40) і здачі завдань (F-60) потребують попереднього налаштування курсу викладачем після кожного щогодинного скидання стенда, тому до поточного спринта не включені (кандидати для спринта 5).
 
 ## Перелік сценаріїв (5 сценаріїв, норматив для команди з 3 осіб — ≥ 4)
 
@@ -14,9 +14,9 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | **TC-001** | F-10, GUI-10, GUI-75 | `get(BASE/login/index.php?lang=en)` → `By.id("username")` ввести `student` → `By.id("password")` ввести `sandbox24` → клік `By.id("loginbtn")` | `visibilityOfElementLocated(#user-menu-toggle, .usermenu)` | **Жорстка:** меню користувача видно. **М'яка (`assertAll`):** URL не містить `/login/`, меню користувача активне, форми входу немає | `LoginTest.validLoginOpensDashboard` |
 | 2 | **TC-003** | F-10, GUI-20 | Та сама форма, пароль `wrong_password_1` | `visibilityOfElementLocated(.alert-danger, .loginerrors .alert-danger, [role='alert'])` | **М'яка (`assertAll`):** текст містить «Unable to log in»; URL містить `/login/`; поле `password` порожнє | `LoginTest.invalidPasswordShowsErrorAndKeepsUsername` |
-| 3 | **TC-007** | F-30 | `get(BASE/?lang=en)` без входу | умова-лямбда: на сторінці є посилання `a[href*='/course/view.php?id=']` з непорожнім текстом | **М'яка (`assertAll`):** є «My first course» і «My second course»; у тексті сторінки є «Terri Teacher» | `CourseCatalogTest.homeListsCoursesWithTeacherWithoutLogin` |
-| 4 | **TC-008** | F-30 | `get(BASE/course/search.php?lang=en)` → поле `#region-main input[name='q'], #region-main input[name='search']` ввести `first` → Enter | умова-лямбда «URL містить `q=first` або `search=first`», потім умова-лямбда «список посилань на курси непорожній» | **М'яка (`assertAll`):** є «My first course»; **немає** «My second course» | `CourseCatalogTest.searchFindsCourseByNameFragment` |
-| 5 | **TC-009** | F-30 | Те саме з пошуковим рядком `zzqqxx` | `textToBePresentInElementLocated(body, "No courses were found")` | **М'яка (`assertAll`):** є повідомлення про відсутність курсів; кількість посилань на курси = 0 | `CourseCatalogTest.searchWithoutMatchesShowsNotFoundMessage` |
+| 3 | **TC-008** | F-30 | `get(BASE/?lang=en)` без входу | умова-лямбда: на сторінці є посилання `a[href*='/course/view.php?id=']` з непорожнім текстом | **М'яка (`assertAll`):** є «My first course» і «My second course»; у тексті сторінки є «Terri Teacher» | `CourseCatalogTest.homeListsCoursesWithTeacherWithoutLogin` |
+| 4 | **TC-009** | F-140 | `get(BASE/course/search.php?lang=en)` → поле `#region-main input[name='q'], #region-main input[name='search']` ввести `first` → Enter | умова-лямбда «URL містить `q=first` або `search=first`», потім умова-лямбда «список посилань на курси непорожній» | **М'яка (`assertAll`):** є «My first course»; **немає** «My second course» | `CourseCatalogTest.searchFindsCourseByNameFragment` |
+| 5 | **TC-011** | F-30 | Те саме з пошуковим рядком `zzqqxx` | `textToBePresentInElementLocated(body, "No courses were found")` | **М'яка (`assertAll`):** є повідомлення про відсутність курсів; кількість посилань на курси = 0 | `CourseCatalogTest.searchWithoutMatchesShowsNotFoundMessage` |
 
 ## Стійкість локаторів
 
