@@ -1,0 +1,181 @@
+{
+  "id": "4c69ee6e-ab67-46ce-abc4-41e535512152",
+  "version": "2.0",
+  "name": "eduportal-sprint4",
+  "url": "https://sandbox.moodledemo.net",
+  "tests": [
+    {
+      "id": "01efb93f-4c9a-40f5-a0f5-5eed3351996f",
+      "name": "F-10 Вхід студента (assert + verify)",
+      "commands": [
+        {
+          "id": "ca885007-3830-478c-9498-5d7caa1ce25f",
+          "comment": "Сторінка входу, англійський інтерфейс",
+          "command": "open",
+          "target": "/login/index.php?lang=en",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "26bebaa3-b024-4799-8016-1934baa02526",
+          "comment": "Розмір вікна — як у WebDriver-тестах",
+          "command": "setWindowSize",
+          "target": "1280x900",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "566ad2c3-ad7b-4b7d-8a61-e6de0d96b3e1",
+          "comment": "Очікування замість pause",
+          "command": "waitForElementVisible",
+          "target": "id=username",
+          "targets": [],
+          "value": "10000"
+        },
+        {
+          "id": "44c11af6-aca1-4e50-9d1a-58397f115a3a",
+          "comment": "",
+          "command": "type",
+          "target": "id=username",
+          "targets": [],
+          "value": "student"
+        },
+        {
+          "id": "09d945f4-ffcb-401e-a3eb-94412613c0df",
+          "comment": "",
+          "command": "type",
+          "target": "id=password",
+          "targets": [],
+          "value": "sandbox24"
+        },
+        {
+          "id": "30ad3b41-f8db-4af4-a757-ee34324a4d88",
+          "comment": "",
+          "command": "click",
+          "target": "id=loginbtn",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "20c36e26-3813-4a8f-a0cb-536b174aa310",
+          "comment": "Сеанс створено — з'явилось меню користувача",
+          "command": "waitForElementVisible",
+          "target": "css=#user-menu-toggle, .usermenu",
+          "targets": [],
+          "value": "10000"
+        },
+        {
+          "id": "66741cf4-e900-4a18-a3f3-0b355ef3103b",
+          "comment": "ЖОРСТКА перевірка: без входу далі нема що перевіряти",
+          "command": "assertElementPresent",
+          "target": "css=#user-menu-toggle, .usermenu",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "ed0ab28b-d9ca-471d-bfb1-b388c5065075",
+          "comment": "М'яка перевірка: форми входу вже немає",
+          "command": "verifyElementNotPresent",
+          "target": "id=loginbtn",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "a975d953-c216-42c3-8111-3e0a6b63d161",
+      "name": "F-30 Пошук курсу за назвою",
+      "commands": [
+        {
+          "id": "01170838-9b40-423f-a59e-125a71849426",
+          "comment": "",
+          "command": "open",
+          "target": "/course/search.php?lang=en",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "7a4388f5-0b8f-49ad-ac36-a8c0b05908e6",
+          "comment": "",
+          "command": "setWindowSize",
+          "target": "1280x900",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "531b434c-8550-4379-aad6-2ec4be585f6b",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=#region-main input[name='q'], #region-main input[name='search'], #coursesearchbox",
+          "targets": [],
+          "value": "10000"
+        },
+        {
+          "id": "c272e090-a439-44c6-83aa-0774898ce3eb",
+          "comment": "",
+          "command": "type",
+          "target": "css=#region-main input[name='q'], #region-main input[name='search'], #coursesearchbox",
+          "targets": [],
+          "value": "first"
+        },
+        {
+          "id": "edf884ab-4077-40c6-ac23-c771ede055d5",
+          "comment": "",
+          "command": "sendKeys",
+          "target": "css=#region-main input[name='q'], #region-main input[name='search'], #coursesearchbox",
+          "targets": [],
+          "value": "${KEY_ENTER}"
+        },
+        {
+          "id": "56bb82ec-e4f3-46a1-ad29-b84007fa6a18",
+          "comment": "Очікуємо результат, а не pause",
+          "command": "waitForElementVisible",
+          "target": "linkText=My first course",
+          "targets": [],
+          "value": "10000"
+        },
+        {
+          "id": "76eb4a7f-8f31-466d-8d4e-e761006d70cb",
+          "comment": "ЖОРСТКА перевірка: потрібний курс знайдено",
+          "command": "assertText",
+          "target": "linkText=My first course",
+          "targets": [],
+          "value": "My first course"
+        },
+        {
+          "id": "cf491ef3-a72c-441d-b23d-1f17208b977d",
+          "comment": "М'яка перевірка: зайвих курсів немає",
+          "command": "verifyElementNotPresent",
+          "target": "linkText=My second course",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "e1d9d95d-c8fe-4928-8092-0c761a27ab11",
+          "comment": "М'яка перевірка: результати — посилання на курси",
+          "command": "verifyElementPresent",
+          "target": "css=a[href*='/course/view.php?id=']",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "id": "089ad684-7737-4d7e-87d1-e80bd59c117d",
+      "name": "ЕдуПортал: вхід і пошук",
+      "persistSession": false,
+      "parallel": false,
+      "timeout": 300,
+      "tests": [
+        "01efb93f-4c9a-40f5-a0f5-5eed3351996f",
+        "a975d953-c216-42c3-8111-3e0a6b63d161"
+      ]
+    }
+  ],
+  "urls": [
+    "https://sandbox.moodledemo.net/"
+  ],
+  "plugins": []
+}
