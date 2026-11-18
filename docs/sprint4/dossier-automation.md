@@ -31,9 +31,9 @@
 | :--- | :--- | :--- | :--- |
 | `TC-001` | F-10, GUI-10, GUI-75 | Успішний вхід студента (`student`) | `LoginTest.validLoginOpensDashboard` |
 | `TC-003` | F-10, GUI-20 | Спроба входу з невірним паролем та збереження логіна | `LoginTest.invalidPasswordShowsErrorAndKeepsUsername` |
-| `TC-007` | F-30 | Відображення списку доступних курсів і викладача без авторизації | `CourseCatalogTest.homeListsCoursesWithTeacherWithoutLogin` |
-| `TC-008` | F-30 | Пошук курсу за фрагментом назви (`first`) | `CourseCatalogTest.searchFindsCourseByNameFragment` |
-| `TC-009` | F-30 | Пошук курсу без збігів (`zzqqxx`) та повідомлення про порожній результат | `CourseCatalogTest.searchWithoutMatchesShowsNotFoundMessage` |
+| `TC-008` | F-30 | Відображення списку доступних курсів і викладача без авторизації | `CourseCatalogTest.homeListsCoursesWithTeacherWithoutLogin` |
+| `TC-009` | F-140 | Пошук курсу за фрагментом назви (`first`) | `CourseCatalogTest.searchFindsCourseByNameFragment` |
+| `TC-011` | F-30 | Пошук курсу без збігів (`zzqqxx`) та повідомлення про порожній результат | `CourseCatalogTest.searchWithoutMatchesShowsNotFoundMessage` |
 
 Детальний опис кроків, CSS-локаторів і явних очікувань наведено у [ui-scenarios.md](ui-scenarios.md).
 

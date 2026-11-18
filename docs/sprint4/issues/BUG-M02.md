@@ -1,26 +1,25 @@
-**ID:** BUG-M01
-**Title:** [module] GradeCalculator.ectsLetter(95.0) повертає «B» замість «A» (BL-20)
+**ID:** BUG-M02
+**Title:** [module] GradeCalculator.latePenalty: штраф обчислюється складним відсотком (0,9^днів), а не −10 % за день (BL-30)
 **Severity:** Major
-**Priority:** Medium
+**Priority:** High
 **Статус:** Open (спринт 4, модуль v1) · **Мітка:** `module`
 
 **Description:**
-За BL-20 літера **A** виставляється, коли `total ≥ 95`. Метод використовує строге порівняння `total > 95`, тому значення рівно 95,00 потрапляє в діапазон B. Помилка стосується лише верхньої межі діапазону A; інші межі (85, 75, 65, 60, 35) метод обробляє правильно. Підсумок курсу округлюється до 2 знаків (BL-10), тож значення рівно 95,00 цілком досяжне на практиці.
+BL-30 і F-60: штраф становить −10 % **від балу** за кожен повний день запізнення, але не більше −50 % загалом (тобто множник `1 − 0,1·min(днів, 5)`). У модулі бал множиться на `0,9` у степені кількості днів (складний відсоток), тож з 2-го дня штраф менший за вимогу, а максимальний штраф дорівнює −40,95 % замість −50 %. Для 0 і 1 дня результат збігається з вимогою, тому помилка непомітна на простих прикладах.
 
-**Вимога (простежуваність):** BL-20 (SRS v1.1, розділ 5)
-**Тест, що фіксує дефект:** `GradeCalculatorTest.ectsLetterAtBoundaries` — рядок [3] «BL-20: ectsLetter(95.0) = A». Тест лишається «червоним» на v1; у спринті 5 він перевірить виправлення у v2 (closed / reopened).
-**Імовірна причина в коді:** У `GradeCalculator.ectsLetter` умова `if (total > 95)` замість `if (total >= 95)`.
+**Вимога (простежуваність):** BL-30 (F-60) (SRS v1.1, розділ 5)
+**Тест, що фіксує дефект:** `GradeCalculatorTest.latePenaltyByDays` — рядки [3]–[8] (запізнення 2, 3, 4, 5, 6 і 30 днів). Тест лишається «червоним» на v1; у спринті 5 він перевірить виправлення у v2 (closed / reopened).
+**Імовірна причина в коді:** У `GradeCalculator.latePenalty` застосовано `score * Math.pow(0.9, cappedDays)` замість `score * (1 - 0.1 * cappedDays)`.
 
 **Steps to reproduce:**
 1. Створити `GradeCalculator calc = new GradeCalculator();`
-2. Викликати `calc.ectsLetter(95.0)`.
-3. Для порівняння викликати `calc.ectsLetter(95.01)` та `calc.ectsLetter(94.99)`.
+2. Викликати `calc.latePenalty(80, 2)`, `calc.latePenalty(80, 3)`, `calc.latePenalty(80, 5)`, `calc.latePenalty(80, 30)`.
 Або запустити тест: `mvn test -Dtest=GradeCalculatorTest`.
 
-**Actual result:** `ectsLetter(95.0)` повертає `"B"` (`ectsLetter(95.01)` — `"A"`, `ectsLetter(94.99)` — `"B"`).
+**Actual result:** `latePenalty(80, 2)` = 64.8; `(80, 3)` = 58.32; `(80, 4)` = 52.49; `(80, 5)` = 47.24; `(80, 6)` = 47.24; `(80, 30)` = 47.24.
 
-**Expected result:** `ectsLetter(95.0)` повертає `"A"` (BL-20: A — `total ≥ 95`).
+**Expected result:** `latePenalty(80, 2)` = 64.00; `(80, 3)` = 56.00; `(80, 4)` = 48.00; `(80, 5)` = 40.00; `(80, 6)` = 40.00; `(80, 30)` = 40.00 (ліміт −50 %).
 
 **Environment:** Модуль eduportal-module v1.0.0 (пакет ua.kpi.tzyapz.eduportal); JDK 17 (Temurin), Maven 3.9, JUnit 5.10.2 (Jupiter); ОС: Windows 10/11. Команда запуску: `mvn test -Dtest=GradeCalculatorTest` (у PowerShell: `mvn test "-Dtest=GradeCalculatorTest"`)
 
-**Attachments:** `target/surefire-reports/ua.kpi.tzyapz.eduportal.GradeCalculatorTest.txt` .
+**Attachments:** `target/surefire-reports/ua.kpi.tzyapz.eduportal.GradeCalculatorTest.txt`.

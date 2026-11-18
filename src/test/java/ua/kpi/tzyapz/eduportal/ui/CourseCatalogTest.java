@@ -13,16 +13,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * UI-тести каталогу курсів «ЕдуПортал» (F-30) на демо Moodle Sandbox: перелік курсів і пошук без входу.
+ * UI-тести каталогу курсів «ЕдуПортал» (F-30, F-140) на демо Moodle Sandbox: перелік курсів і пошук без входу.
  *
  * @author Черноус А.Д.
  */
 @Tag("ui")
-@DisplayName("ЕдуПортал (Moodle Sandbox): каталог курсів і пошук — F-30")
+@DisplayName("ЕдуПортал (Moodle Sandbox): каталог курсів і пошук — F-30, F-140")
 class CourseCatalogTest extends UiTestBase {
 
     @Test
-    @DisplayName("F-30 · TC-007: гість бачить перелік курсів із назвою та викладачем без входу")
+    @DisplayName("F-30 · TC-008: гість бачить перелік курсів із назвою та викладачем без входу")
     void homeListsCoursesWithTeacherWithoutLogin() {
         // arrange + act
         CourseSearchPage catalog = new CourseSearchPage(driver, wait).openHome(BASE_URL);
@@ -36,7 +36,7 @@ class CourseCatalogTest extends UiTestBase {
     }
 
     @Test
-    @DisplayName("F-30 · TC-008: пошук за фрагментом назви повертає лише відповідний курс")
+    @DisplayName("F-140 · TC-009: пошук за фрагментом назви повертає лише відповідний курс")
     void searchFindsCourseByNameFragment() {
         // arrange
         CourseSearchPage catalog = new CourseSearchPage(driver, wait).openSearch(BASE_URL);
@@ -44,13 +44,13 @@ class CourseCatalogTest extends UiTestBase {
         catalog.search("first");
         List<String> names = catalog.courseNames();
         // assert
-        assertAll("F-30: результати пошуку «first»",
+        assertAll("F-140: результати пошуку «first»",
             () -> assertTrue(names.contains("My first course"), "Немає «My first course» серед: " + names),
             () -> assertFalse(names.contains("My second course"), "«My second course» не має збігатися з «first»: " + names));
     }
 
     @Test
-    @DisplayName("F-30 · TC-009: пошук без збігів показує повідомлення, що жодного курсу не знайдено")
+    @DisplayName("F-30 · TC-011: пошук без збігів показує повідомлення, що жодного курсу не знайдено")
     void searchWithoutMatchesShowsNotFoundMessage() {
         // arrange
         CourseSearchPage catalog = new CourseSearchPage(driver, wait).openSearch(BASE_URL);

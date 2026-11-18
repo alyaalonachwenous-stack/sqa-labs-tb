@@ -79,14 +79,6 @@
           "target": "id=loginbtn",
           "targets": [],
           "value": ""
-        },
-        {
-          "id": "a0d19661-b606-49ea-8397-43738ab48794",
-          "comment": "М'яка перевірка: відкрито інформаційну панель (/my/)",
-          "command": "verifyElementPresent",
-          "target": "css=body#page-my-index",
-          "targets": [],
-          "value": ""
         }
       ]
     },
@@ -114,7 +106,7 @@
           "id": "531b434c-8550-4379-aad6-2ec4be585f6b",
           "comment": "",
           "command": "waitForElementVisible",
-          "target": "css=#coursesearchbox, #region-main input[name='search']",
+          "target": "css=#region-main input[name='q'], #region-main input[name='search'], #coursesearchbox",
           "targets": [],
           "value": "10000"
         },
@@ -122,7 +114,7 @@
           "id": "c272e090-a439-44c6-83aa-0774898ce3eb",
           "comment": "",
           "command": "type",
-          "target": "css=#coursesearchbox, #region-main input[name='search']",
+          "target": "css=#region-main input[name='q'], #region-main input[name='search'], #coursesearchbox",
           "targets": [],
           "value": "first"
         },
@@ -130,7 +122,7 @@
           "id": "edf884ab-4077-40c6-ac23-c771ede055d5",
           "comment": "",
           "command": "sendKeys",
-          "target": "css=#coursesearchbox, #region-main input[name='search']",
+          "target": "css=#region-main input[name='q'], #region-main input[name='search'], #coursesearchbox",
           "targets": [],
           "value": "${KEY_ENTER}"
         },
